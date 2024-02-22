@@ -54,16 +54,16 @@ class Payok extends Payment
 
     public function handleCallback()
     {
-        if ($this->debug) {
-            $this->modx->logEvent(0, 1, '<pre>' . print_r($_POST, true) . '</pre>',
-                'Process Callback Commerce Payok Payment');
-        }
         if (!empty($_POST['payment_id']) && !empty($_POST['sign']) && $_POST['sign'] === $this->getSignature($_POST, 'callback')) {
+            if ($this->debug) {
+                $this->modx->logEvent(0, 1, '<pre>' . print_r($_POST, true) . '</pre>',
+                    'Process Callback Commerce Payok Payment');
+            }
             $order = explode('-', $_POST['payment_id']);
             $paymentId = $order[1];
             $processor = $this->modx->commerce->loadProcessor();
             try {
-                $payment = $processor->loadPaymentById($paymentId);
+                $payment = $processor->loadPayment($paymentId);
 
                 if (!$payment) {
                     throw new Exception('Payment "' . htmlentities(print_r($paymentId, true)) . '" . not found!');
@@ -74,6 +74,14 @@ class Payok extends Payment
                 $this->modx->logEvent(0, 3, 'Payment process failed: ' . $e->getMessage(),
                     'Commerce Payok Payment');
                 return false;
+            }
+        } else {
+            if ($this->debug) {
+                $this->modx->logEvent(0, 3, 'Payok Payment signature check failed: <pre>' . print_r([
+                        $_POST['sign'] ?? '',
+                        $this->getSignature($_POST, 'callback')
+                    ], true) . '</pre>',
+                    'Process Callback Commerce Payok Payment');
             }
         }
 
